@@ -4,13 +4,14 @@ use std::f32::consts::PI;
 use std::{fs, i16, io};
 
 const SAMPLE_RATE: f32 = 44100.0;
+const BITS_PER_SAMPLE: u16 = 16;
 const MORSE_FREQ: f32 = 600.0;
 const UNIT_TIME: f32 = 100.0 / 1000.0; // IN MS
 
 const SPEC: hound::WavSpec = hound::WavSpec {
     channels: 1,
-    sample_rate: 44100,
-    bits_per_sample: 16,
+    sample_rate: SAMPLE_RATE as u32,
+    bits_per_sample: BITS_PER_SAMPLE,
     sample_format: hound::SampleFormat::Int,
 };
 
