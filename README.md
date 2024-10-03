@@ -32,5 +32,5 @@ fn main() {
 ```
 
 ## TODO
-- Decode morse from string and sound
+- Decode morse from sound
 - Add proper rust like error return types

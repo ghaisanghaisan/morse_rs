@@ -25,7 +25,7 @@ fn write_freq(writer: &mut WavWriter<io::BufWriter<fs::File>>, freq: f32, durati
 }
 
 pub fn to_morse(text: &str) -> String {
-    let morse_map: HashMap<char, &str> = HashMap::from([
+    let char_to_morse: HashMap<char, &str> = HashMap::from([
         ('a', ".-"),
         ('b', "-..."),
         ('c', "-.-."),
@@ -67,16 +67,29 @@ pub fn to_morse(text: &str) -> String {
     let code = text.to_lowercase();
     let mut ret = String::new();
 
-    for c in code.chars() {
+    let chars: Vec<char> = code.chars().collect();
+
+    for (i, &c) in chars.iter().enumerate() {
+        let prev = if i > 0 { Some(chars[i - 1]) } else { None };
+        let next = if i < chars.len() - 1 {
+            Some(chars[i + 1])
+        } else {
+            None
+        };
+
         if c == ' ' {
-            ret += " / ";
-        } else if let Some(morse) = morse_map.get(&c) {
-            ret += morse;
+            if let (Some(p), Some(n)) = (prev, next) {
+                if char_to_morse.contains_key(&p) && char_to_morse.contains_key(&n) {
+                    ret += "/ ";
+                }
+            }
+        } else if let Some(encoded) = char_to_morse.get(&c) {
+            ret += encoded;
+            ret += " ";
         }
-        ret += " ";
     }
 
-    ret
+    ret.trim_end().to_string()
 }
 
 pub fn write_morse(filename: &str, morse: &str) {
@@ -100,4 +113,91 @@ pub fn write_morse(filename: &str, morse: &str) {
         }
     }
     write_freq(&mut writer, 0.0, UNIT_TIME); // End padding
+}
+
+pub fn from_morse(morse: &str) -> String {
+    let morse_to_char: HashMap<&str, char> = HashMap::from([
+        (".-", 'a'),
+        ("-...", 'b'),
+        ("-.-.", 'c'),
+        ("-..", 'd'),
+        (".", 'e'),
+        ("..-.", 'f'),
+        ("--.", 'g'),
+        ("....", 'h'),
+        ("..", 'i'),
+        (".---", 'j'),
+        ("-.-", 'k'),
+        (".-..", 'l'),
+        ("--", 'm'),
+        ("-.", 'n'),
+        ("---", 'o'),
+        (".--.", 'p'),
+        ("--.-", 'q'),
+        (".-.", 'r'),
+        ("...", 's'),
+        ("-", 't'),
+        ("..-", 'u'),
+        ("...-", 'v'),
+        (".--", 'w'),
+        ("-..-", 'x'),
+        ("-.--", 'y'),
+        ("--..", 'z'),
+        (".----", '1'),
+        ("..---", '2'),
+        ("...--", '3'),
+        ("....-", '4'),
+        (".....", '5'),
+        ("-....", '6'),
+        ("--...", '7'),
+        ("---..", '8'),
+        ("----.", '9'),
+        ("-----", '0'),
+        ("/", ' '),
+    ]);
+
+    let mut look = String::new();
+    let mut ret = String::new();
+
+    for c in morse.chars() {
+        if c == ' ' {
+            if let Some(decoded) = morse_to_char.get(&look[..]) {
+                ret.push(*decoded);
+                look = "".to_string();
+            }
+        } else {
+            look.push(c);
+        }
+    }
+
+    if !look.is_empty() {
+        if let Some(decoded) = morse_to_char.get(&look[..]) {
+            ret.push(*decoded);
+        }
+    }
+
+    ret
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_to_morse() {
+        let encoded = to_morse("This iS a Message 01 written in morse!");
+        assert_eq!(encoded, "- .... .. ... / .. ... / .- / -- . ... ... .- --. . / ----- .---- / .-- .-. .. - - . -. / .. -. / -- --- .-. ... .")
+    }
+
+    #[test]
+    fn test_weird_input_to_morse() {
+        let encoded = to_morse("!@(@*$)(!*@)($*)!@ hey this is good char now )!(@*)][][]][]");
+        assert_eq!(encoded, ".... . -.-- / - .... .. ... / .. ... / --. --- --- -.. / -.-. .... .- .-. / -. --- .--")
+    }
+
+    #[test]
+    fn test_from_morse() {
+        let decoded = from_morse("-.. .- -. .. ... .... / --. .... .- .. ... .- -. / .--. ..- - . .-. .- / .- .... -- .- -.. ..");
+        assert_eq!(decoded, "danish ghaisan putera ahmadi");
+    }
 }
