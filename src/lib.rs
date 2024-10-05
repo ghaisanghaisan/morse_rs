@@ -1,6 +1,7 @@
 use hound::{self, WavWriter};
 use std::collections::HashMap;
 use std::f32::consts::PI;
+use std::io::Cursor;
 use std::{fs, i16, io};
 
 const SAMPLE_RATE: f32 = 44100.0;
@@ -14,14 +15,68 @@ const SPEC: hound::WavSpec = hound::WavSpec {
     bits_per_sample: BITS_PER_SAMPLE,
     sample_format: hound::SampleFormat::Int,
 };
+pub fn from_morse(morse: &str) -> String {
+    let morse_to_char: HashMap<&str, char> = HashMap::from([
+        (".-", 'a'),
+        ("-...", 'b'),
+        ("-.-.", 'c'),
+        ("-..", 'd'),
+        (".", 'e'),
+        ("..-.", 'f'),
+        ("--.", 'g'),
+        ("....", 'h'),
+        ("..", 'i'),
+        (".---", 'j'),
+        ("-.-", 'k'),
+        (".-..", 'l'),
+        ("--", 'm'),
+        ("-.", 'n'),
+        ("---", 'o'),
+        (".--.", 'p'),
+        ("--.-", 'q'),
+        (".-.", 'r'),
+        ("...", 's'),
+        ("-", 't'),
+        ("..-", 'u'),
+        ("...-", 'v'),
+        (".--", 'w'),
+        ("-..-", 'x'),
+        ("-.--", 'y'),
+        ("--..", 'z'),
+        (".----", '1'),
+        ("..---", '2'),
+        ("...--", '3'),
+        ("....-", '4'),
+        (".....", '5'),
+        ("-....", '6'),
+        ("--...", '7'),
+        ("---..", '8'),
+        ("----.", '9'),
+        ("-----", '0'),
+        ("/", ' '),
+    ]);
 
-fn write_freq(writer: &mut WavWriter<io::BufWriter<fs::File>>, freq: f32, duration: f32) {
-    let sample_count = (duration * SAMPLE_RATE).ceil() as i32;
-    for t in (0..sample_count).map(|x| x as f32 / SAMPLE_RATE) {
-        let sample = (t * freq * 2.0 * PI).sin();
-        let amplitude = i16::MAX as f32;
-        writer.write_sample((sample * amplitude) as i16).unwrap();
+    let mut look = String::new();
+    let mut ret = String::new();
+
+    for c in morse.chars() {
+        if c == ' ' {
+            if let Some(decoded) = morse_to_char.get(&look[..]) {
+                ret.push(*decoded);
+                look = "".to_string();
+            }
+        } else {
+            look.push(c);
+        }
     }
+
+    if !look.is_empty() {
+        if let Some(decoded) = morse_to_char.get(&look[..]) {
+            ret.push(*decoded);
+        }
+    }
+
+    ret
 }
 
 pub fn to_morse(text: &str) -> String {
@@ -92,6 +147,15 @@ pub fn to_morse(text: &str) -> String {
     ret.trim_end().to_string()
 }
 
+fn write_freq(writer: &mut WavWriter<io::BufWriter<fs::File>>, freq: f32, duration: f32) {
+    let sample_count = (duration * SAMPLE_RATE).ceil() as i32;
+    for t in (0..sample_count).map(|x| x as f32 / SAMPLE_RATE) {
+        let sample = (t * freq * 2.0 * PI).sin();
+        let amplitude = i16::MAX as f32;
+        writer.write_sample((sample * amplitude) as i16).unwrap();
+    }
+}
+
 pub fn write_morse(filename: &str, morse: &str) {
     let mut writer = hound::WavWriter::create(filename, SPEC).unwrap();
     for c in morse.chars() {
@@ -115,68 +179,40 @@ pub fn write_morse(filename: &str, morse: &str) {
     write_freq(&mut writer, 0.0, UNIT_TIME); // End padding
 }
 
-pub fn from_morse(morse: &str) -> String {
-    let morse_to_char: HashMap<&str, char> = HashMap::from([
-        (".-", 'a'),
-        ("-...", 'b'),
-        ("-.-.", 'c'),
-        ("-..", 'd'),
-        (".", 'e'),
-        ("..-.", 'f'),
-        ("--.", 'g'),
-        ("....", 'h'),
-        ("..", 'i'),
-        (".---", 'j'),
-        ("-.-", 'k'),
-        (".-..", 'l'),
-        ("--", 'm'),
-        ("-.", 'n'),
-        ("---", 'o'),
-        (".--.", 'p'),
-        ("--.-", 'q'),
-        (".-.", 'r'),
-        ("...", 's'),
-        ("-", 't'),
-        ("..-", 'u'),
-        ("...-", 'v'),
-        (".--", 'w'),
-        ("-..-", 'x'),
-        ("-.--", 'y'),
-        ("--..", 'z'),
-        (".----", '1'),
-        ("..---", '2'),
-        ("...--", '3'),
-        ("....-", '4'),
-        (".....", '5'),
-        ("-....", '6'),
-        ("--...", '7'),
-        ("---..", '8'),
-        ("----.", '9'),
-        ("-----", '0'),
-        ("/", ' '),
-    ]);
+pub fn write_freq_inmemory(writer: &mut WavWriter<Cursor<&mut Vec<u8>>>, freq: f32, duration: f32) {
+    let sample_count = (duration * SAMPLE_RATE).ceil() as i32;
+    for t in (0..sample_count).map(|x| x as f32 / SAMPLE_RATE) {
+        let sample = (t * freq * 2.0 * PI).sin();
+        let amplitude = i16::MAX as f32;
+        writer.write_sample((sample * amplitude) as i16).unwrap();
+    }
+}
 
-    let mut look = String::new();
-    let mut ret = String::new();
-
-    for c in morse.chars() {
-        if c == ' ' {
-            if let Some(decoded) = morse_to_char.get(&look[..]) {
-                ret.push(*decoded);
-                look = "".to_string();
+pub fn write_morse_inmemory(morse: &str) -> Vec<u8> {
+    let mut buffer = Vec::new(); // Create a buffer to hold the WAV data
+    {
+        let mut writer = hound::WavWriter::new(Cursor::new(&mut buffer), SPEC).unwrap();
+        for c in morse.chars() {
+            // Writing Morse code frequencies based on the character
+            if c == '.' {
+                write_freq_inmemory(&mut writer, MORSE_FREQ, UNIT_TIME);
+                write_freq_inmemory(&mut writer, 0.0, 0.5 * UNIT_TIME); // Silence after dot
+            } else if c == '-' {
+                write_freq_inmemory(&mut writer, MORSE_FREQ, 3.0 * UNIT_TIME);
+                write_freq_inmemory(&mut writer, 0.0, 0.5 * UNIT_TIME); // Silence after dash
+            } else if c == ' ' {
+                write_freq_inmemory(&mut writer, 0.0, 1.5 * UNIT_TIME); // Silence for space
+            } else if c == '/' {
+                write_freq_inmemory(&mut writer, 0.0, 2.0 * UNIT_TIME); // Silence for word space
+            } else {
+                panic!("The morse code given is not valid!");
             }
-        } else {
-            look.push(c);
         }
-    }
+        write_freq_inmemory(&mut writer, 0.0, UNIT_TIME); // End padding
+        writer.finalize().unwrap(); // Finalize the writer
+    } // The writer goes out of scope here
 
-    if !look.is_empty() {
-        if let Some(decoded) = morse_to_char.get(&look[..]) {
-            ret.push(*decoded);
-        }
-    }
-
-    ret
+    buffer // Return the WAV data as a Vec<u8>
 }
 
 #[cfg(test)]
