@@ -13,7 +13,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-morse_rs = "0.1"
+morse_rs = "0.1.2"
 ```
 
 ## Usage
