@@ -18,7 +18,7 @@ morse_rs = "0.1.2"
 
 ## Usage
 
-converts a string to morse then writes the encoded message into a wav file.
+Converts a string to morse then writes the encoded message into a wav file.
 
 ```rust
 use morse_rs::{to_morse, write_morse};
@@ -26,6 +26,19 @@ use morse_rs::{to_morse, write_morse};
 fn main() {
     let my_message = "attack at noon";
     let morse = to_morse(my_message);
+
+    write_morse("my_message.wav", &morse);
+}
+```
+
+We can also write the morse into a buffer in memory
+
+```rust
+use morse_rs::{to_morse, write_morse};
+
+fn main() {
+    let my_message = "attack at noon";
+    let morse = to_morse_inmemory(my_message);
 
     write_morse("my_message.wav", &morse);
 }
