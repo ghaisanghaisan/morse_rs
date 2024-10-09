@@ -13,37 +13,41 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-morse_rs = "0.1.2"
+morse_rs = "0.1.3"
 ```
 
 ## Usage
 
-Converts a string to morse then writes the encoded message into a wav file.
+Converts a string to morse then writes the encoded message into a wav file, specifying the pause times.
 
 ```rust
-use morse_rs::{to_morse, write_morse};
+use morse_rs::{to_morse, write_morse_to_file};
 
 fn main() {
     let my_message = "attack at noon";
     let morse = to_morse(my_message);
 
-    write_morse("my_message.wav", &morse);
+    write_morse_to_file("my_message.wav", &morse, 150.0, 200.0);
 }
+
 ```
 
-We can also write the morse into a buffer in memory
+We can also write the morse into a buffer in memory, doing so allows the use of transferring data with WebAssembly.
 
 ```rust
-use morse_rs::{to_morse, write_morse};
+use morse_rs::{to_morse, write_morse_in_memory};
 
-fn main() {
-    let my_message = "attack at noon";
-    let morse = to_morse_inmemory(my_message);
+#[wasm_bindgen]
+pub fn generate_morse_sound(s: String) -> Vec<u8> {
+    let encoded = to_morse(&s);
+    let sound = write_morse_in_memory(encoded, 150.0, 200.0);
 
-    write_morse("my_message.wav", &morse);
+    sound
 }
+
 ```
 
 ## TODO
 - Decode morse from sound
-- Add proper rust like error return types
+- Solve the Riemann Hypothesis
+
