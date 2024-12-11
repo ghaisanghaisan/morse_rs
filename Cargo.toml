@@ -2,7 +2,7 @@
 name = "morse_rs"
 description = "A simple morse code translator, with the abilty to write to WAV files using Hound."
 license = "MIT"
-version = "0.1.4"
+version = "0.1.41"
 edition = "2021"
 
 [dependencies]

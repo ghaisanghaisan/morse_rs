@@ -7,15 +7,6 @@ A simple Morse code translator written in Rust, with the ability to write Morse 
 - Translate text to Morse code and vice versa
 - Generate WAV files from Morse code sequences
 
-## Installation
-
-Add this to your `Cargo.toml`:
-
-```toml
-[dependencies]
-morse_rs = "0.1.4"
-```
-
 ## Usage
 
 Converts a string to morse then writes the encoded message into a wav file, specifying the pause times.

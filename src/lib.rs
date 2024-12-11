@@ -233,6 +233,10 @@ pub fn write_morse_in_memory(
     pause_between_char_time: f32,
     pause_between_words_time: f32,
 ) -> Vec<u8> {
+    // Convert from MS;
+    let pause_between_char_time = pause_between_char_time / 1000.0;
+    let pause_between_words_time = pause_between_words_time / 1000.0;
+
     let mut buffer = Vec::new(); // Create a buffer to hold the WAV data
     {
         let mut writer = hound::WavWriter::new(Cursor::new(&mut buffer), SPEC).unwrap();
